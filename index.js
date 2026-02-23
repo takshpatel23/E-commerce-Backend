@@ -23,7 +23,12 @@ app.use(cors({
 }));
 
 app.use("/uploads", express.static("uploads"));
-
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "API Running Successfully"
+  });
+});
 // MongoDB Connection Cache
 let cached = global.mongoose;
 
