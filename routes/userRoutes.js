@@ -23,10 +23,11 @@ router.get("/data", protect, async (req, res) => {
   }
 });
 // UPDATE USER PROFILE
+// UPDATE USER PROFILE
 router.put(
   "/profile",
   protect,
-  upload.single("profileImage"),
+  upload.single("profileImage"), // This now uploads to Cloudinary automatically
   async (req, res) => {
     try {
       const user = await User.findById(req.user.id);
@@ -34,36 +35,27 @@ router.put(
 
       const { name, phone, address, city, state, pincode, country } = req.body;
 
+      // Update basic details
       user.name = name || user.name;
-      user.phone = phone;
-      user.address = address;
-      user.city = city;
-      user.state = state;
-      user.pincode = pincode;
-      user.country = country;
+      user.phone = phone || user.phone;
+      user.address = address || user.address;
+      user.city = city || user.city;
+      user.state = state || user.state;
+      user.pincode = pincode || user.pincode;
+      user.country = country || user.country;
 
+      // 🔥 If a new file was uploaded to Cloudinary
       if (req.file) {
-        const inputPath = req.file.path;
-        const outputFileName = Date.now() + ".jpg";
-        const outputPath = path.join("uploads", outputFileName);
-
-        // 🔥 Convert to JPG
-        await sharp(inputPath)
-          .jpeg({ quality: 90 })
-          .toFile(outputPath);
-
-        // Delete original file
-        fs.unlinkSync(inputPath);
-
-        user.profileImage = `/uploads/${outputFileName}`;
+        // req.file.path is the full URL provided by Cloudinary
+        user.profileImage = req.file.path; 
       }
 
       await user.save();
       res.json(user);
 
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error" });
+      console.error("Update Error:", error);
+      res.status(500).json({ message: "Server error", details: error.message });
     }
   }
 );
