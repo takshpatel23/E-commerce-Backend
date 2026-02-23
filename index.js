@@ -3,25 +3,57 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 
-import authRoutes from "../Backend/routes/authRoutes.js";
-import productRoutes from "../Backend/routes/productRoutes.js";
-import userRoutes from "../Backend/routes/userRoutes.js";
-import orderRoutes from "../Backend/routes/orderRoutes.js";
-import reportsRoutes from "../Backend/routes/reportRoutes.js";
-import notificationRoutes from "../Backend/routes/notificationRoutes.js";
-import categoryRoutes from "../Backend/routes/categoryRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import reportsRoutes from "./routes/reportRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
 
 dotenv.config();
 
 const app = express();
 
-// ✅ Middleware
 app.use(express.json());
-app.use(cors()); // Vercel ma localhost restrict na rakhu
+
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 
 app.use("/uploads", express.static("uploads"));
 
-// ✅ Routes
+// MongoDB Connection Cache
+let cached = global.mongoose;
+
+if (!cached) {
+    cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function connectDB() {
+    if (cached.conn) return cached.conn;
+
+    if (!cached.promise) {
+        cached.promise = mongoose.connect(process.env.MONGO_URI);
+    }
+
+    cached.conn = await cached.promise;
+    return cached.conn;
+}
+
+// Database middleware
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: "Database connection failed" });
+    }
+});
+
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);
@@ -30,22 +62,4 @@ app.use("/api/reports", reportsRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/notifications", notificationRoutes);
 
-// ✅ MongoDB Connect (Important Fix For Serverless)
-let isConnected = false;
-
-const connectDB = async () => {
-  if (isConnected) return;
-  const db = await mongoose.connect(process.env.MONGO_URI);
-  isConnected = db.connections[0].readyState;
-};
-
-app.use(async (req, res, next) => {
-  await connectDB();
-  next();
-});
-
-// ❌ REMOVE THIS
-// app.listen(PORT)
-
-// ✅ Export for Vercel
 export default app;
