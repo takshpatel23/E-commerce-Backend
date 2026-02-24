@@ -23,11 +23,10 @@ router.get("/data", protect, async (req, res) => {
   }
 });
 // UPDATE USER PROFILE
-// UPDATE USER PROFILE
 router.put(
   "/profile",
   protect,
-  upload.single("profileImage"), // This now uploads to Cloudinary automatically
+  upload.single("profileImage"), 
   async (req, res) => {
     try {
       const user = await User.findById(req.user.id);
@@ -44,9 +43,8 @@ router.put(
       user.pincode = pincode || user.pincode;
       user.country = country || user.country;
 
-      // 🔥 If a new file was uploaded to Cloudinary
       if (req.file) {
-        // req.file.path is the full URL provided by Cloudinary
+
         user.profileImage = req.file.path; 
       }
 
@@ -59,7 +57,6 @@ router.put(
     }
   }
 );
-
 
 router.put("/wishlist/:productId", protect, async (req, res) => {
   try {
@@ -90,7 +87,7 @@ router.get("/wishlist", protect, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-// 🔥 UPLOAD PROFILE IMAGE
+//  UPLOAD PROFILE IMAGE
 router.put(
   "/profile/image",
   protect,
